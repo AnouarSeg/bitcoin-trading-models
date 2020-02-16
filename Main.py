@@ -1,13 +1,69 @@
 from coinbase.wallet.client import Client
 from coinbase.wallet.error import TwoFactorRequiredError
+import robin_stocks as r
 import time
 import requests
 from datetime import datetime, timedelta
 import os
+import yfinance as yf
+
 
 def marketCheck():
     test = client.get_buy_price(currency_pair = 'BTC-USD')
     print(test)
+
+# login = r.login(os.environ['ROBINHOOD_USER'],os.environ['ROBINHOOD_PASSWORD'])
+# test = r.get_current_positions()
+msft = yf.Ticker("MSFT")
+# print(str(msft.history(period="max")["Open"]))
+# for i in msft.history(period="max")["Open"]:
+#     print("oopsie: "+str(i))
+buy_limit = 20
+buy = 0
+sell = 0
+coin = 0
+profit = 0
+value = msft.history(period="max")["Open"]
+bank = 2000
+n = 50
+day = 0
+total_for_n = 0
+days_from_start = 0
+while (days_from_start < len(msft.history(period="max")["Open"])):
+    price = value[days_from_start]
+    if days_from_start >= n:
+        front_window_price = value[days_from_start-n]
+        print("yikes: "+str(front_window_price))
+        average = total_for_n/n
+        print("this is n: "+str(n))
+        total_for_n  = total_for_n  - front_window_price
+        print("running_average_n: "+str(total_for_n))
+        print("running average: "+str(average))
+        if average > price:
+            buy = buy + 1
+            profit = profit - buy_limit
+            bank = bank - buy_limit
+            if profit > 0:
+                print("price: "+str(price))
+                print("buy profit: "+str(profit))
+        elif average < price:
+            sell = sell + 1
+            profit = profit + buy_limit
+            bank = bank + buy_limit
+            if profit > 0:
+                print("price: "+str(price))
+                print("sell profit: "+str(profit))
+    total_for_n  = total_for_n  + price
+    days_from_start=days_from_start+1
+    print("hello?")
+print("this is the profit using this algorithm: "+str(profit))
+print("shares bought: "+str(coin))
+print("coins value: "+str(coin*r.json()['bpi'][str(today-timedelta(days=1))]))
+print("total over all value: "+str(profit+(coin*r.json()['bpi'][str(today-timedelta(days=1))])))
+print("bank: "+str(bank))
+print("sell: "+str(sell))
+print("buy: "+str(buy))
+#
 coinbase_key = os.environ['COINBASE_API_KEY']
 coinbase_secret = os.environ['COINBASE_API_SECRET']
 print(coinbase_key)
@@ -21,7 +77,7 @@ dayEstimate = 0
 currentPrice = client.get_buy_price(currency_pair='BTC-USD')
 currentPrice = currentPrice.get("amount")
 #If this is too large it'll throw 404
-time_to_track = 1000
+time_to_track = 500
 today = datetime.today().date()
 print("this is today: "+str(today))
 end = today - timedelta(days=time_to_track)
@@ -33,46 +89,56 @@ dates = r.json()['bpi'][str(end)]
 print("this is the date:"+ str(dates))
 #
 #
-coin = 1
-coin_value = 0
+buy_limit = 20
+buy = 0
+sell = 0
+coin = 0
 profit = 0
-n = 200
-running_average_n = 0
+bank = 2000
+n = 50
+total_for_n = 0
 days_from_start = 0
 while (end != today):
     price = r.json()['bpi'][str(end)]
     if days_from_start >= n:
         front_window_price = r.json()['bpi'][str(end-timedelta(days=n))]
-        average = running_average_n/n
-        print("this is n: "+str(n))
-        running_average_n = running_average_n - front_window_price
-        print("running_average_n: "+str(running_average_n))
-        print("running average: "+str(average))
+        # print("yikes: "+str(front_window_price))
+        average = total_for_n/n
+        # print("this is n: "+str(n))
+        total_for_n  = total_for_n  - front_window_price
+        # print("running_average_n: "+str(total_for_n))
+        # print("running average: "+str(average))
         if average > price:
-            print("buy")
-            coin = coin + 1
-            profit = profit - price
-            print("price: "+str(price))
-            print("buy profit: "+str(profit))
-        elif coin > 0:
-            print("sell")
-            coin = coin - 1
-            profit = profit + price
-            print("price: "+str(price))
-            print("sell profit: "+str(profit))
-    else:
-        print("oof: "+str(days_from_start))
-    running_average_n = running_average_n + price
-    total = total+price
+            buy = buy + 1
+            coin = coin + price/(price - buy_limit)
+            profit = profit - buy_limit
+            bank = bank - buy_limit
+            if profit > 0:
+                print("price: "+str(price))
+                print("buy profit: "+str(profit))
+        elif average < price and coin > 0:
+            sell = sell + 1
+            coin = coin - price/(price - buy_limit)
+            profit = profit + buy_limit
+            bank = bank + buy_limit
+            if profit > 0:
+                print("price: "+str(price))
+                print("sell profit: "+str(profit))
+    total_for_n  = total_for_n  + price
     end = end + timedelta(days=1)
     days_from_start=days_from_start+1
 print("this is the profit using this algorithm: "+str(profit))
 print("coins bought: "+str(coin))
-
-
-# averagePrice=total/count
-# print("Average price: "+str(averagePrice))
-# if(float(currentPrice)>averagePrice):
-#     print("Current:"+str(currentPrice)+" > Average:"+str(averagePrice))
-# else:
-#     print("Current:"+str(currentPrice)+" < Average:"+str(averagePrice))
+print("coins value: "+str(coin*r.json()['bpi'][str(today-timedelta(days=1))]))
+print("total over all value: "+str(profit+(coin*r.json()['bpi'][str(today-timedelta(days=1))])))
+print("bank: "+str(bank))
+print("sell: "+str(sell))
+print("buy: "+str(buy))
+#
+#
+# # averagePrice=total/count
+# # print("Average price: "+str(averagePrice))
+# # if(float(currentPrice)>averagePrice):
+# #     print("Current:"+str(currentPrice)+" > Average:"+str(averagePrice))
+# # else:
+# #     print("Current:"+str(currentPrice)+" < Average:"+str(averagePrice))
