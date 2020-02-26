@@ -19,6 +19,12 @@ import numpy as np
 
 def get_stock_moving_average():
     msft = yf.Ticker("MSFT")
+    day_to_day_price = []
+    day_to_day_sell = []
+    day_to_day_buy = []
+    buy_day_price = []
+    sell_day_price = []
+    days = []
     buy_limit = 20
     buy = 0
     sell = 0
@@ -34,12 +40,10 @@ def get_stock_moving_average():
         price = value[days_from_start]
         if days_from_start >= n:
             front_window_price = value[days_from_start-n]
-            print("yikes: "+str(front_window_price))
+            day_to_day_price.append(front_window_price)
+            days.append(days_from_start-n)
             average = total_for_n/n
-            print("this is n: "+str(n))
             total_for_n  = total_for_n  - front_window_price
-            print("running_average_n: "+str(total_for_n))
-            print("running average: "+str(average))
             if average > price:
                 buy = buy + 1
                 profit = profit - buy_limit
@@ -63,6 +67,8 @@ def get_stock_moving_average():
     print("bank: "+str(bank))
     print("sell: "+str(sell))
     print("buy: "+str(buy))
+    items = {"prices":day_to_day_price,"days":days}
+    return items
 
 def bitcoin_moving_average_historical():
     items = {}
@@ -70,6 +76,7 @@ def bitcoin_moving_average_historical():
     day_to_day_bc_sell = []
     day_to_day_bc_buy = []
     buy_day_price = []
+    sell_day_price = []
     days = []
     coinbase_key = os.environ['COINBASE_API_KEY']
     coinbase_secret = os.environ['COINBASE_API_SECRET']
@@ -131,6 +138,7 @@ def bitcoin_moving_average_historical():
                 profit = profit + buy_limit
                 bank = bank + buy_limit
                 day_to_day_bc_sell.append(end)
+                sell_day_price.append(price)
                 if profit > 0:
                     print("price: "+str(price))
                     print("sell profit: "+str(profit))
@@ -144,17 +152,20 @@ def bitcoin_moving_average_historical():
     print("bank: "+str(bank))
     print("sell: "+str(sell))
     print("buy: "+str(buy))
-    items = {"prices":day_to_day_bc_price,"days":days,"buy":day_to_day_bc_buy, "buy_day_prices":buy_day_price,"sell":day_to_day_bc_sell}
+    items = {"prices":day_to_day_bc_price,"days":days,"buy":day_to_day_bc_buy, "buy_day_prices":buy_day_price,"sell":day_to_day_bc_sell,"sell_day_prices":sell_day_price}
     return items
 
 
 root = tkinter.Tk()
 root.wm_title("Embedding in Tk")
 data = bitcoin_moving_average_historical()
+stock_data = get_stock_moving_average()
 fig = Figure(figsize=(5, 4), dpi=100)
 fig.add_subplot(111).plot(data["days"],data["prices"])
 buy = fig.add_subplot(111)
 buy.scatter(data["buy"],data["buy_day_prices"],color='green')
+buy.scatter(data["sell"],data["sell_day_prices"],color='red')
+fig.add_subplot(111).plot(stock_data["days"],stock_data["prices"])
 
 canvas = FigureCanvasTkAgg(fig, master=root)  # A tk.DrawingArea.
 canvas.draw()
