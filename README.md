@@ -1,4 +1,4 @@
-# BitcoinAPI_Fun
+# bitcoin-trading-models
 Visual representation of trades made using n day moving average on historical bitcoin and stock price data. Integration also provided for stocks.
 Some extra spice inside tracking profits for this strategy. 
 - red represents a sell, green a buy.
